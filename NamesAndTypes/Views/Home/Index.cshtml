@@ -1,0 +1,96 @@
+﻿@model NamesAndTypes.Models.AddViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Home Page";
+}
+<br /><br /><br />
+<form asp-controller="home" asp-action="index" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="row">
+        <div class="span12 columns offset4">
+            <h3>Seacrh for names and types</h3>
+            <div class="clearfix">
+                <div class="input">
+                    <label asp-for="Name" class="input-group-text"></label>
+                </div>
+                <input asp-for="Name" type="text" class="form-control" id="name" placeholder="Hello World" aria-label="Name">
+                <span asp-validation-for="Name" class="text-danger" style="color:red"></span>
+            </div>
+
+            <div class="search">
+                <div class="clearfix">
+                    <div class="input">
+                        <label asp-for="Type" class="input-group-text"></label>
+                    </div>
+                    <input type="text" asp-for="Type" data-toggle="tooltip" title="This is my text, do not touch!" autocomplete="off" id="type" class="form-control" placeholder="Type" aria-label="Type">
+                    <span asp-validation-for="Type" class="text-danger" style="color:red"></span>
+                </div>
+                <div class="result bg-info d-none invisible">
+                    <ul class="list-group result-items">
+                    </ul>
+                </div>
+            </div>
+            <button type="submit" id="submit" class="btn btn-info" disabled>Submit</button>
+        </div>
+    </div>
+</form>
+
+@section Scripts{
+    <script>
+        $('#type').on("keyup", function () {
+            var searchValue = $(this).val();
+            if (searchValue.length >= 3) {
+                $('.result').addClass('d-block');
+                $('.result').removeClass('invisible')
+                $.ajax({
+                    method: 'get',
+                    url: 'https://localhost:44349/home/GetTypes',
+                    data: {
+                        searchText: searchValue,
+                    },
+                    success: function (result) {
+                        var element = [];
+                        var data = JSON.parse(result);
+
+                        if (data.length != 0) {
+                            for (var i = 0; i < data.length; i++) {
+                                element += `<li class="list-group-item resultType">${data[i].Type}</li>`
+                            }
+                            $('.result-items').html(element);
+                        }
+                        else {
+                            $('.result-items').html(`<li class="list-group-item resultType">Nothing is found</li>`);
+                        }
+                    }
+                })
+            } else {
+                $('.result').removeClass('d-block');
+                $('.result').addClass('invisible')
+            }
+        })
+
+        $(document).on('click', '.resultType', function () {
+            var typeText = $(this).text();
+            $('#type').val(typeText);
+
+            $('.result-items').removeClass("d-block");
+            $('.result-items').html('');
+        })
+
+        $('#name').on('keyup', IsValid)
+        $('#type').on('keyup', IsValid)
+        function IsValid() {
+            if ($('#name').val().length >= 4 && $('#type').val().length >= 4) {
+                $('#submit').removeAttr('disabled');
+            }
+            else {
+                $('#submit').attr('disabled','');
+            }
+        }
+
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+}
