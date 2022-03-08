@@ -8,89 +8,87 @@
     @Html.AntiForgeryToken()
 
     <div class="row">
-        <div class="span12 columns offset4">
+        <div class="span12 columns offset4"  ng-app="app" ng-controller="controller">
             <h3>Seacrh for names and types</h3>
             <div class="clearfix">
                 <div class="input">
                     <label asp-for="Name" class="input-group-text"></label>
                 </div>
-                <input asp-for="Name" type="text" class="form-control" id="name" placeholder="Hello World" aria-label="Name">
+                <input asp-for="Name" type="text" ng-keyup="IsValid()" class="form-control" id="name" placeholder="Hello World" aria-label="Name">
                 <span asp-validation-for="Name" class="text-danger" style="color:red"></span>
             </div>
-
             <div class="search">
                 <div class="clearfix">
                     <div class="input">
                         <label asp-for="Type" class="input-group-text"></label>
                     </div>
-                    <input type="text" asp-for="Type" data-toggle="tooltip" title="This is my text, do not touch!" autocomplete="off" id="type" class="form-control" placeholder="Type" aria-label="Type">
+                    <input type="text" asp-for="Type" ng-keyup="[keyup(),IsValid()]" data-toggle="tooltip" title="This is my text, do not touch!" autocomplete="off" id="type2" class="form-control" placeholder="Type" aria-label="Type">
                     <span asp-validation-for="Type" class="text-danger" style="color:red"></span>
                 </div>
-                <div class="result bg-info d-none invisible">
+                <div class="result bg-info d-none" ng-show="IsVisible">
                     <ul class="list-group result-items">
+                        <li ng-repeat="type in types" ng-click="selectType(type.Type)" class="list-group-item resultType">{{type.Type}}</li>
+                        <li class="list-group-item" ng-show="notFound">Nothing is found</li>
                     </ul>
                 </div>
             </div>
             <button type="submit" id="submit" class="btn btn-info" disabled>Submit</button>
         </div>
+
     </div>
 </form>
 
 @section Scripts{
-    <script>
-        $('#type').on("keyup", function () {
-            var searchValue = $(this).val();
-            if (searchValue.length >= 3) {
-                $('.result').addClass('d-block');
-                $('.result').removeClass('invisible')
-                $.ajax({
-                    method: 'get',
-                    url: 'https://localhost:44349/home/GetTypes',
-                    data: {
-                        searchText: searchValue,
-                    },
-                    success: function (result) {
+    <script type="text/javascript">
+        var app = angular.module('app', [])
+        app.controller('controller', function ($scope, $http) {
+            $scope.IsVisible = false;
+            $scope.notFound = false;
+            $scope.keyup = function () {
+                var searchValue = angular.element('#type2').val();
+                if (searchValue.length >= 3) {
+                    angular.element('.result').addClass('d-block');
+                    $scope.IsVisible = true;
+                    var getRequest = $http({
+                        method: "GET",
+                        url: "https://localhost:44349/home/GetTypes",
+                        dataType: "json",
+                        params: { searchText: searchValue },
+                    }).then(function (result) {
                         var element = [];
-                        var data = JSON.parse(result);
 
-                        if (data.length != 0) {
-                            for (var i = 0; i < data.length; i++) {
-                                element += `<li class="list-group-item resultType">${data[i].Type}</li>`
-                            }
-                            $('.result-items').html(element);
+                        if (result.data.length != 0) {
+                            $scope.notFound = false;
+                            $scope.types = result.data;
                         }
                         else {
-                            $('.result-items').html(`<li class="list-group-item resultType">Nothing is found</li>`);
+                            angular.element('.resultType').remove();
+                            $scope.notFound = true;
                         }
-                    }
-                })
-            } else {
-                $('.result').removeClass('d-block');
-                $('.result').addClass('invisible')
+                    });
+                }
+                else {
+                    angular.element('.result').removeClass('d-block');
+                    $scope.IsVisible = false;
+                }
             }
-        })
 
-        $(document).on('click', '.resultType', function () {
-            var typeText = $(this).text();
-            $('#type').val(typeText);
-
-            $('.result-items').removeClass("d-block");
-            $('.result-items').html('');
-        })
-
-        $('#name').on('keyup', IsValid)
-        $('#type').on('keyup', IsValid)
-        function IsValid() {
-            if ($('#name').val().length >= 4 && $('#type').val().length >= 4) {
-                $('#submit').removeAttr('disabled');
+            $scope.IsValid = function () {
+                var typeVal = angular.element('#type2').val();
+                var nameValue = angular.element('#name').val();
+                if (nameValue.length >= 4 && typeVal.length >= 4) {
+                    angular.element('#submit').removeAttr('disabled');
+                }
+                else {
+                    angular.element('#submit').attr('disabled','');
+                }
             }
-            else {
-                $('#submit').attr('disabled','');
-            }
-        }
 
-        $(function () {
-            $('[data-toggle="tooltip"]').tooltip()
-        })
+            $scope.selectType = function (content) {
+                angular.element('#type2').val(content);
+                angular.element('.result').removeClass('d-block');
+                angular.element('.resultType').remove();
+            }
+        });
     </script>
 }

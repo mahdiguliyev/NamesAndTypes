@@ -78,7 +78,7 @@ namespace NamesAndTypes.Controllers
         [HttpGet]
         public string GetTypes(string searchText)
         {
-            var types = _context.Types.OrderBy(t => t.Id).Take(5).Where(t => t.Type.StartsWith(searchText));
+            var types = _context.Types.OrderBy(t => t.Id).Where(t => t.Type.StartsWith(searchText)).Take(5);
             string serializedData = JsonSerializer.Serialize(types);
 
             return serializedData;
